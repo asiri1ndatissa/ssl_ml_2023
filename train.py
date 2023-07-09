@@ -79,13 +79,13 @@ if args.debug:
 else:
     train_dataset = D('./data/train_full.npy', training=True)
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=2, shuffle=True)
 
 if args.debug:
     val_dataset = D('./data/val.npy')
 else:
     val_dataset = D('./data/val.npy')
-val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=2)
 
 model = M(nlayers)
 model.cuda()
@@ -105,7 +105,8 @@ def train_epoch(epoch):
     for i, data in enumerate(train_loader):
         input, label = data[0], data[1]
         input, label = input.cuda(), label.cuda()
-        bs = data.shape[0]
+        bs = data.shape()
+        print('bs',bs)
         output = model(input)
         res_softmax = F.softmax(output, dim=1)
         loss = F.cross_entropy(output, label, label_smoothing=0.5)
@@ -116,7 +117,7 @@ def train_epoch(epoch):
         loss += loss_kl
 
         train_loss += loss.item()
-        print('i',i, loss.item(), label, output)
+        # print('i',i, loss.item(), label, output)
         opt.zero_grad()
         loss.backward()
         opt.step()
