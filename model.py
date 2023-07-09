@@ -10,7 +10,7 @@ import numpy as np
 num_class  = 23 # 250 
 num_landmark = 533
 max_length = 256
-embed_dim  = 240
+embed_dim  = 480
 num_head   = 16 # ranges from 4 to 16
 
 ## 

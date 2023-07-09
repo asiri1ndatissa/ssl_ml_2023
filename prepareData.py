@@ -35,14 +35,11 @@ feature_converter = FeatureGen()
 
 ROWS_PER_FRAME = 533
 def load_relevant_data_subset(csv_path):
-    data_columns = ['x', 'y', 'z']
+    data_columns = ['x', 'y']
     data = pd.read_csv(csv_path, usecols=data_columns)
     n_frames = int(len(data) / ROWS_PER_FRAME)
-    # print('len',len(data),n_frames)
     data = data.values.reshape(n_frames, ROWS_PER_FRAME, len(data_columns))
     return data.astype(np.float32)
-
-from joblib import Parallel, delayed
 
 
 def convert_row(path, label, signer_id):

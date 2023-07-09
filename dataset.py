@@ -81,16 +81,16 @@ def do_hflip_nose(nose):
     nose = nose[:,[0,1,3,2]]
     return nose
 
-def pre_process(xyz,aug):
+def pre_process(xy,aug):
 
     # select the lip, right/left hand, right/left eye, pose, nose parts.
-    lip   = xyz[:, SLIP]#20
-    lhand = xyz[:, LHAND]#21
-    rhand = xyz[:, RHAND]#21
-    pose = xyz[:, SPOSE]#8
-    reye = xyz[:, REYE]#16
-    leye = xyz[:, LEYE]#16
-    nose = xyz[:, NOSE]#4
+    lip   = xy[:, SLIP]#20
+    lhand = xy[:, LHAND]#21
+    rhand = xy[:, RHAND]#21
+    pose = xy[:, SPOSE]#8
+    reye = xy[:, REYE]#16
+    leye = xy[:, LEYE]#16
+    nose = xy[:, NOSE]#4
     
     if aug and random.random()>0.7:
         lhand, rhand = do_hflip_hand(lhand, rhand)
@@ -99,7 +99,7 @@ def pre_process(xyz,aug):
         lip = do_hflip_slip(lip)
         nose = do_hflip_nose(nose)
 
-    xyz = torch.cat([ #(none, 106, 2)
+    xy = torch.cat([ #(none, 106, 2)
         lhand,
         rhand,
         lip,
@@ -111,7 +111,7 @@ def pre_process(xyz,aug):
 
 
     # concatenate the frame delta information
-    x = torch.cat([xyz[1:,:len(LHAND+RHAND),:]-xyz[:-1,:len(LHAND+RHAND),:],torch.zeros((1,len(LHAND+RHAND),2))],0)
+    x = torch.cat([xy[1:,:len(LHAND+RHAND),:]-xy[:-1,:len(LHAND+RHAND),:],torch.zeros((1,len(LHAND+RHAND),2))],0)
     
     
     # TODO
@@ -141,7 +141,7 @@ def pre_process(xyz,aug):
 
     dist_hand=torch.sqrt(((lhand-rhand)**2).sum(-1))
 
-    xyz = torch.cat([xyz.reshape(-1,(len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE))*2), 
+    xy = torch.cat([xy.reshape(-1,(len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE))*2), 
                          x.reshape(-1,(len(LHAND+RHAND))*2),
                          ld,
                          rd,
@@ -153,13 +153,13 @@ def pre_process(xyz,aug):
                         ],1)
     
     # fill the nan value with 0
-    xyz[torch.isnan(xyz)] = 0
+    xy[torch.isnan(xy)] = 0
     
     
     
-    return xyz
+    return xy
 
-def do_random_affine(xyz,
+def do_random_affine(xy,
     scale  = (0.8,1.5),
     shift  = (-0.1,0.1),
     degree = (-15,15),
@@ -169,35 +169,35 @@ def do_random_affine(xyz,
     if np.random.rand()<p:
         if scale is not None:
             scale_ = np.random.uniform(*scale)
-            xyz[:,:,0] = scale_*xyz[:,:,0]
+            xy[:,:,0] = scale_*xy[:,:,0]
             scale_ = np.random.uniform(*scale)
-            xyz[:,:,1] = scale_*xyz[:,:,1]
+            xy[:,:,1] = scale_*xy[:,:,1]
 
             scale_ = np.random.uniform(*scale)
-            xyz[:,LHAND,0] = scale_*xyz[:,LHAND,0]
+            xy[:,LHAND,0] = scale_*xy[:,LHAND,0]
             scale_ = np.random.uniform(*scale)
-            xyz[:,LHAND,1] = scale_*xyz[:,LHAND,1]
+            xy[:,LHAND,1] = scale_*xy[:,LHAND,1]
 
             scale_ = np.random.uniform(*scale)
-            xyz[:,RHAND,0] = scale_*xyz[:,RHAND,0]
+            xy[:,RHAND,0] = scale_*xy[:,RHAND,0]
             scale_ = np.random.uniform(*scale)
-            xyz[:,RHAND,1] = scale_*xyz[:,RHAND,1]
+            xy[:,RHAND,1] = scale_*xy[:,RHAND,1]
 
         if shift is not None:
             shift_ = np.random.uniform(*shift)
-            xyz[:,:,0] = xyz[:,:,0] + shift_
+            xy[:,:,0] = xy[:,:,0] + shift_
             shift_ = np.random.uniform(*shift)
-            xyz[:,:,1] = xyz[:,:,1] + shift_
+            xy[:,:,1] = xy[:,:,1] + shift_
 
             shift_ = np.random.uniform(*shift)
-            xyz[:,LHAND,0] = xyz[:,LHAND,0] + shift_/2
+            xy[:,LHAND,0] = xy[:,LHAND,0] + shift_/2
             shift_ = np.random.uniform(*shift)
-            xyz[:,LHAND,1] = xyz[:,LHAND,1] + shift_/2
+            xy[:,LHAND,1] = xy[:,LHAND,1] + shift_/2
 
             shift_ = np.random.uniform(*shift)
-            xyz[:,RHAND,0] = xyz[:,RHAND,0] + shift_/2
+            xy[:,RHAND,0] = xy[:,RHAND,0] + shift_/2
             shift_ = np.random.uniform(*shift)
-            xyz[:,RHAND,1] = xyz[:,RHAND,1] + shift_/2
+            xy[:,RHAND,1] = xy[:,RHAND,1] + shift_/2
 
         if degree is not None:
             degree_ = np.random.uniform(*degree)
@@ -208,7 +208,7 @@ def do_random_affine(xyz,
                 [c,-s],
                 [s, c],
             ]).T
-            xyz[:,:,:2] = xyz[:,:,:2] @rotate
+            xy[:,:,:2] = xy[:,:,:2] @rotate
 
             degree_ = np.random.uniform(*degree)
             radian = degree_/180*np.pi
@@ -218,7 +218,7 @@ def do_random_affine(xyz,
                 [c,-s],
                 [s, c],
             ]).T
-            xyz[:,RHAND,:2] = xyz[:,RHAND,:2] @rotate
+            xy[:,RHAND,:2] = xy[:,RHAND,:2] @rotate
 
             degree_ = np.random.uniform(*degree)
             radian = degree_/180*np.pi
@@ -228,29 +228,29 @@ def do_random_affine(xyz,
                 [c,-s],
                 [s, c],
             ]).T
-            xyz[:,LHAND,:2] = xyz[:,LHAND,:2] @rotate
+            xy[:,LHAND,:2] = xy[:,LHAND,:2] @rotate
 
-    return xyz
+    return xy
 #-----------------------------------------------------
-def train_augment(xyz):
-    xyz = do_random_affine(
-        xyz,
+def train_augment(xy):
+    xy = do_random_affine(
+        xy,
         scale  = (0.8,1.2),
         shift  = (-0.2,0.2),
         degree = (-5,5),
         p=0.7
     )
-    return xyz
+    return xy
 
 
-def do_normalise_by_ref(xyz, ref):  
-    K = xyz.shape[-1]
-    xyz_flat = ref.reshape(-1,K)
-    m = np.nanmean(xyz_flat,0).reshape(1,1,K)
-    s = np.nanstd(xyz_flat, 0).mean() 
-    xyz = xyz - m
-    xyz = xyz / s
-    return xyz
+def do_normalise_by_ref(xy, ref):  
+    K = xy.shape[-1]
+    xy_flat = ref.reshape(-1,K)
+    m = np.nanmean(xy_flat,0).reshape(1,1,K)
+    s = np.nanstd(xy_flat, 0).mean() 
+    xy = xy - m
+    xy = xy / s
+    return xy
 
 class D(Dataset):
 
@@ -260,9 +260,28 @@ class D(Dataset):
         self.maxlen = 256 # 537 actually
         self.training = training
         self.label_map = [[] for _ in range(23)]
+        self.label_map2 = {}
+        self.label_map3 = {}
         for i, item in enumerate(self.data):
             label = item['label']
+            pid = item['participant_id']
+
             self.label_map[label].append(i)
+
+            k = pid+label
+            if k in self.label_map2:
+                self.label_map2[k].append(i)
+            else:
+                self.label_map2[k] = [i]
+
+            k = pid
+            if k in self.label_map3:
+                self.label_map3[k].append(i)
+            else:
+                self.label_map3[k] = [i]
+
+        self.label_map2 = list(self.label_map2.values())
+
         if training:
             self.augment = train_augment
         else:
@@ -278,105 +297,105 @@ class D(Dataset):
         data = tmp['data']
         label = tmp['label']    
 
-        xyz = data.reshape((-1, 533, 3))
+        xy = data.reshape((-1, 533, 2))
 
         shift = 4 
-        if self.augment is not None and random.random()>0.6 and len(xyz)>5:
+        if self.augment is not None and random.random()>0.6 and len(xy)>5:
             # TODO
-            k0 = np.random.randint(0,len(xyz))
-            k1 = np.random.randint(max(k0-shift,0), min(len(xyz), k0+shift))
-            xyz = xyz - np.nan_to_num(xyz[k0:k0+1]) + np.nan_to_num(xyz[k1:k1+1])
+            k0 = np.random.randint(0,len(xy))
+            k1 = np.random.randint(max(k0-shift,0), min(len(xy), k0+shift))
+            xy = xy - np.nan_to_num(xy[k0:k0+1]) + np.nan_to_num(xy[k1:k1+1])
         
         if self.augment is not None and random.random()>0.5:
             # randomly select another sample with the same label
             new_idx = random.choice(self.label_map[label])
-            new_xyz = self.data[new_idx]['data'].reshape((-1, 533, 3))
+            new_xy = self.data[new_idx]['data'].reshape((-1, 533, 3))
             
             if random.random()>0.5:
                 # mixup two samples with the same label
-                l=min(len(xyz),len(new_xyz))
-                xyz[:l,:,:] = (xyz[:l,:,:] + new_xyz[:l,:,:]) / 2
+                l=min(len(xy),len(new_xy))
+                xy[:l,:,:] = (xy[:l,:,:] + new_xy[:l,:,:]) / 2
             elif random.random()>0.5:
                 # random select another sample with the same label, shuffle the original coords with the delta of the two selected samples
 
                 new_idx = random.choice(self.label_map[label])
-                new_xyz2 = self.data[new_idx]['data'].reshape((-1, 533, 3))
+                new_xy2 = self.data[new_idx]['data'].reshape((-1, 533, 3))
                 
-                l=min(len(xyz),len(new_xyz),len(new_xyz2))
-                xyz[:l,:,:] = xyz[:l,:,:] + new_xyz[:l,:,:] - new_xyz2[:l,:,:]
+                l=min(len(xy),len(new_xy),len(new_xy2))
+                xy[:l,:,:] = xy[:l,:,:] + new_xy[:l,:,:] - new_xy2[:l,:,:]
             else:
                 # randomly replace the right hand / left hand / body part with the selected samples
-                l=min(len(xyz),len(new_xyz))
+                l=min(len(xy),len(new_xy))
                 if random.random()>0.5:
-                    xyz[:l,RHAND,:] = new_xyz[:l,RHAND,:]
+                    xy[:l,RHAND,:] = new_xy[:l,RHAND,:]
                 elif random.random()>0.5:            
-                    xyz[:l,LHAND,:] = new_xyz[:l,LHAND,:]
+                    xy[:l,LHAND,:] = new_xy[:l,LHAND,:]
                 else:
-                    xyz[:l,BODY,:] = new_xyz[:l,BODY,:]
+                    xy[:l,BODY,:] = new_xy[:l,BODY,:]
             
             # randomly select a slice from the original sequence
-            l = len(xyz)
+            l = len(xy)
             k1 = np.random.randint(0, 1+int(l*0.15))
             k2 = np.random.randint(0, 1+int(l*0.15))
-            xyz = xyz[k1:len(xyz)-k2]
+            xy = xy[k1:len(xy)-k2]
 
         elif self.augment is not None and random.random()>0.5:
             # randomly select another sample with the same label, use the start position of the original sample and the moving information of the selected sample to construct a new sample
             new_idx = random.choice(self.label_map[label])
-            new_xyz = self.data[new_idx]['data'].reshape((-1, 533, 3))
+            new_xy = self.data[new_idx]['data'].reshape((-1, 533, 3))
 
-            x0 = np.nan_to_num(xyz[:1,:,:])
-            x_diff = new_xyz - np.nan_to_num(new_xyz[:1,:,:])
+            x0 = np.nan_to_num(xy[:1,:,:])
+            x_diff = new_xy - np.nan_to_num(new_xy[:1,:,:])
 
-            xyz = x_diff + x0
-            xyz[xyz==0] = np.nan
+            xy = x_diff + x0
+            xy[xy==0] = np.nan
 
-            l = len(xyz)
+            l = len(xy)
             k1 = np.random.randint(0, 1+int(l*0.15))
             k2 = np.random.randint(0, 1+int(l*0.15))
-            xyz = xyz[k1:len(xyz)-k2]
+            xy = xy[k1:len(xy)-k2]
 
         
         # only use the xy coords
-        xyz = xyz[:,:,:2]
+        xy = xy[:,:,:2]
         
         if self.augment is not None and random.random()>0.8:
             # randomly resize the original sequence by interpolation
-            l,dim,dim2 = xyz.shape
+            l,dim,dim2 = xy.shape
             b=range(l)
-            f=interp1d(b,xyz,axis=0)
+            f=interp1d(b,xy,axis=0)
             step = np.random.uniform(low=0.5, high=2)
             new_b=list(np.arange(0,l-1,step))+[l-1]
-            xyz = f(new_b)
+            xy = f(new_b)
 
         
-        xyz_flat = xyz.reshape(-1,2)
-        m = np.nanmean(xyz_flat,0).reshape(1,1,2)
+        xy_flat = xy.reshape(-1,2)
+        m = np.nanmean(xy_flat,0).reshape(1,1,2)
     
         # apply coords normalization
-        xyz = xyz - m #noramlisation to common maen
-        xyz = xyz / np.nanstd(xyz_flat, 0).mean() 
+        xy = xy - m #noramlisation to common maen
+        xy = xy / np.nanstd(xy_flat, 0).mean() 
 
         aug = 0
         if self.augment is not None:
             # applying data augmentation
-            xyz = self.augment(xyz)
+            xy = self.augment(xy)
             aug = 1
 
 
-        xyz = torch.from_numpy(xyz).float()
-        xyz = pre_process(xyz,aug)[:self.maxlen]
+        xy = torch.from_numpy(xy).float()
+        xy = pre_process(xy,aug)[:self.maxlen]
         
-        xyz[torch.isnan(xyz)] = 0
+        xy[torch.isnan(xy)] = 0
 
         # padding the sqeuence to a pre-defined max length
-        data_pad = torch.zeros((self.maxlen, xyz.shape[1]), dtype=torch.float32)
-        tot = xyz.shape[0]
+        data_pad = torch.zeros((self.maxlen, xy.shape[1]), dtype=torch.float32)
+        tot = xy.shape[0]
 
         if tot <= self.maxlen:
-            data_pad[:tot] = xyz
+            data_pad[:tot] = xy
         else:
-            data_pad[:] = xyz[:self.maxlen]
+            data_pad[:] = xy[:self.maxlen]
 
         if not self.training:
             # for validation
