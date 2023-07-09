@@ -8,8 +8,8 @@ import scipy
 from scipy.interpolate import interp1d
 
 LHAND = np.arange(468, 489).tolist() # 21 (0,21)
-RHAND = np.arange(522, 543).tolist() # 21 (21,42)
-POSE  = np.arange(489, 522).tolist() # 33 (510,543)
+RHAND = np.arange(512, 533).tolist() # 21 (21,42)
+POSE  = np.arange(489, 512).tolist() # 33 (510,543)
 FACE  = np.arange(0,468).tolist()    #468  (42,510)
 
 REYE = [
@@ -278,7 +278,7 @@ class D(Dataset):
         data = tmp['data']
         label = tmp['label']    
 
-        xyz = data.reshape((-1, 543, 3))
+        xyz = data.reshape((-1, 533, 3))
 
         shift = 4 
         if self.augment is not None and random.random()>0.6 and len(xyz)>5:
@@ -290,7 +290,7 @@ class D(Dataset):
         if self.augment is not None and random.random()>0.5:
             # randomly select another sample with the same label
             new_idx = random.choice(self.label_map[label])
-            new_xyz = self.data[new_idx]['data'].reshape((-1, 543, 3))
+            new_xyz = self.data[new_idx]['data'].reshape((-1, 533, 3))
             
             if random.random()>0.5:
                 # mixup two samples with the same label
@@ -300,7 +300,7 @@ class D(Dataset):
                 # random select another sample with the same label, shuffle the original coords with the delta of the two selected samples
 
                 new_idx = random.choice(self.label_map[label])
-                new_xyz2 = self.data[new_idx]['data'].reshape((-1, 543, 3))
+                new_xyz2 = self.data[new_idx]['data'].reshape((-1, 533, 3))
                 
                 l=min(len(xyz),len(new_xyz),len(new_xyz2))
                 xyz[:l,:,:] = xyz[:l,:,:] + new_xyz[:l,:,:] - new_xyz2[:l,:,:]
@@ -323,7 +323,7 @@ class D(Dataset):
         elif self.augment is not None and random.random()>0.5:
             # randomly select another sample with the same label, use the start position of the original sample and the moving information of the selected sample to construct a new sample
             new_idx = random.choice(self.label_map[label])
-            new_xyz = self.data[new_idx]['data'].reshape((-1, 543, 3))
+            new_xyz = self.data[new_idx]['data'].reshape((-1, 533, 3))
 
             x0 = np.nan_to_num(xyz[:1,:,:])
             x_diff = new_xyz - np.nan_to_num(new_xyz[:1,:,:])

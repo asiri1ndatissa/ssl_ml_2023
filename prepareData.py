@@ -14,9 +14,9 @@ from torch.utils.data import Dataset, DataLoader
 import warnings
 warnings.filterwarnings(action='ignore')
 
-LANDMARK_FILES_DIR = "/content/drive/MyDrive/Asiri/keyPoints"
-TRAIN_FILE = "/content/drive/MyDrive/Asiri/train_file.csv"
-label_map = json.load(open("/content/drive/MyDrive/Asiri/sign_map.json", "r"))
+LANDMARK_FILES_DIR = "/content/drive/MyDrive/july8thData/keyPoints"
+TRAIN_FILE = "/content/drive/MyDrive/july8thData/train_file.csv"
+label_map = json.load(open("/content/drive/MyDrive/july8thData/sign_map.json", "r"))
 
 # create directory for datasets
 os.system('mkdir data')
@@ -33,11 +33,12 @@ class FeatureGen(nn.Module):
     
 feature_converter = FeatureGen()
 
-ROWS_PER_FRAME = 543
+ROWS_PER_FRAME = 533
 def load_relevant_data_subset(csv_path):
     data_columns = ['x', 'y', 'z']
     data = pd.read_csv(csv_path, usecols=data_columns)
     n_frames = int(len(data) / ROWS_PER_FRAME)
+    # print('len',len(data),n_frames)
     data = data.values.reshape(n_frames, ROWS_PER_FRAME, len(data_columns))
     return data.astype(np.float32)
 
@@ -78,4 +79,4 @@ def convert_and_save_validate_data(val=False):
         np.save(f"./data/train_full.npy", np.array(data_list))
 
 print('test')
-convert_and_save_validate_data(False)
+convert_and_save_validate_data(True)
