@@ -13,16 +13,16 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from dataset import D, ConcatDataset
 from model import M
-from adv import EMA, compute_kl_loss, AWP
+from adv import EMA, compute_kl_loss, AWP, compute_js_divergence
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=20)
-    parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--nlayers', type=int, default=3)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--nlayers', type=int, default=2)
     parser.add_argument('--print_freq', type=int, default=50)
     parser.add_argument('--work_dir', type=str, default='work_dirs/exp1')
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--warmup_ratio', type=float, default=0.1)
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--do_eval', action='store_true')
@@ -105,15 +105,13 @@ def train_epoch(epoch):
     for i, data in enumerate(train_loader):
         input, label = data[0], data[1]
         input, label = input.cuda(), label.cuda()
-        bs = data.shape()
-        print('bs',bs)
         output = model(input)
         res_softmax = F.softmax(output, dim=1)
         loss = F.cross_entropy(output, label, label_smoothing=0.5)
-        label_onehot = F.one_hot(label, num_classes=23)
+        label_onehot = F.one_hot(label, num_classes=23).float()
         loss_poly = 1. - (label_onehot * res_softmax).sum(dim=1).mean() # poly loss
         loss += loss_poly
-        loss_kl = compute_kl_loss(output[:bs], output[bs:]) # rdrop loss
+        loss_kl = compute_js_divergence(res_softmax, label_onehot) # rdrop loss
         loss += loss_kl
 
         train_loss += loss.item()
@@ -123,33 +121,30 @@ def train_epoch(epoch):
         opt.step()
         ema.update()
 
+
         if (i + 1) % print_freq == 0:
             train_loss /= print_freq
             logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
             train_loss = 0
-
+    logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
     scheduler.step()
 
 def eval_epoch(epoch):
     model.eval()
     torch.cuda.synchronize()
-    eval_loss = 0
-    correct = 0
-    total = 0
+    pred_all = 0.
+    pred_correct = 0.
     for i, data in enumerate(val_loader):
         input, label = data[0], data[1]
         input, label = input.cuda(), label.cuda()
         with torch.no_grad():
             output = model(input)
-            loss = F.cross_entropy(output, label)
-        eval_loss += loss.item()
-        _, predicted = output.max(1)
-        correct += predicted.eq(label).sum().item()
-        total += input.size(0)
-
-    eval_loss /= len(val_loader)
-    acc = correct / total * 100
-    logger.info(f"Epoch [{epoch}/{epochs}] Validation Loss: {eval_loss:.4f}, Accuracy: {acc:.2f}%")
+        output = output.argmax(dim=-1)
+        tmp = (output == label).float()
+        pred_all += output.shape[0]
+        pred_correct += output.sum()
+    acc = pred_correct / pred_all
+    logger.info(f"Epoch [{epoch}/{epochs}] Validation Accuracy: {acc:.2f}%")
 
 def main():
     logger.info("Start training...")
