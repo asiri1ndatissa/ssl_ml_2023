@@ -97,6 +97,7 @@ opt = AdamW(model.parameters(), lr=lr)
 stepsize = len(train_dataset) // batch_size + 1
 total_steps = stepsize * epochs
 scheduler = get_linear_schedule_with_warmup(opt, int(total_steps * warmup_ratio), total_steps)
+awp = AWP(model=model, optimizer=opt, adv_lr=3e-5,adv_eps=1e-2, start_epoch=1)
 
 def train_epoch(epoch):
     model.train()
@@ -105,6 +106,7 @@ def train_epoch(epoch):
     for i, data in enumerate(train_loader):
         input, label = data[0], data[1]
         input, label = input.cuda(), label.cuda()
+
         output = model(input)
         res_softmax = F.softmax(output, dim=1)
         loss = F.cross_entropy(output, label, label_smoothing=0.5)
@@ -113,24 +115,37 @@ def train_epoch(epoch):
         loss += loss_poly
         loss_kl = compute_js_divergence(res_softmax, label_onehot) # rdrop loss
         loss += loss_kl
+        loss.backward()
+
+        awp.attack_backward(epoch) # AWP attach, and then re-compute the loss again
+        output = model(input)
+        res_softmax = F.softmax(output, dim=1)
+        loss = F.cross_entropy(output, label, label_smoothing=0.5)
+        label_onehot = F.one_hot(label, num_classes=23).float()
+        loss_poly = 1. - (label_onehot * res_softmax).sum(dim=1).mean() # poly loss
+        loss += loss_poly
+        loss_kl = compute_js_divergence(res_softmax, label_onehot) # rdrop loss
+        loss += loss_kl
+        loss.backward()
+        awp.restore()
 
         train_loss += loss.item()
-        # print('i',i, loss.item(), label, output)
-        opt.zero_grad()
-        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0) # clip the gradient  
         opt.step()
         ema.update()
+        scheduler.step()
+        opt.zero_grad()
 
 
-        if (i + 1) % print_freq == 0:
-            train_loss /= print_freq
-            logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
-            train_loss = 0
+        # if (i + 1) % print_freq == 0:
+        #     train_loss /= print_freq
+        #     logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
+        #     train_loss = 0
     logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
-    scheduler.step()
+    model.eval()
+    ema.apply_shadow()
 
 def eval_epoch(epoch):
-    model.eval()
     torch.cuda.synchronize()
     pred_all = 0.
     pred_correct = 0.
