@@ -105,8 +105,16 @@ def train_epoch(epoch):
     for i, data in enumerate(train_loader):
         input, label = data[0], data[1]
         input, label = input.cuda(), label.cuda()
+        bs = data.shape[0]
         output = model(input)
-        loss = F.cross_entropy(output, label)
+        res_softmax = F.softmax(output, dim=1)
+        loss = F.cross_entropy(output, label, label_smoothing=0.5)
+        label_onehot = F.one_hot(label, num_classes=23)
+        loss_poly = 1. - (label_onehot * res_softmax).sum(dim=1).mean() # poly loss
+        loss += loss_poly
+        loss_kl = compute_kl_loss(output[:bs], output[bs:]) # rdrop loss
+        loss += loss_kl
+
         train_loss += loss.item()
         print('i',i, loss.item(), label, output)
         opt.zero_grad()
