@@ -17,12 +17,12 @@ from adv import EMA, compute_kl_loss, AWP
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=20)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--nlayers', type=int, default=3)
     parser.add_argument('--print_freq', type=int, default=50)
     parser.add_argument('--work_dir', type=str, default='work_dirs/exp1')
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--warmup_ratio', type=float, default=0.1)
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--do_eval', action='store_true')
@@ -75,16 +75,16 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 if args.debug:
-    train_dataset = D('../data/val.npy', training=True)
+    train_dataset = D('./data/val.npy', training=True)
 else:
-    train_dataset = D('../data/train_full.npy', training=True)
+    train_dataset = D('./data/train_full.npy', training=True)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, shuffle=True)
 
 if args.debug:
-    val_dataset = D('../data/val.npy')
+    val_dataset = D('./data/val.npy')
 else:
-    val_dataset = D('../data/val.npy')
+    val_dataset = D('./data/val.npy')
 val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=4)
 
 model = M(nlayers)
@@ -108,6 +108,7 @@ def train_epoch(epoch):
         output = model(input)
         loss = F.cross_entropy(output, label)
         train_loss += loss.item()
+        print('i',i, loss.item(), label, output)
         opt.zero_grad()
         loss.backward()
         opt.step()
