@@ -4,6 +4,7 @@ import random
 import sys
 import logging
 
+from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,7 +49,7 @@ def concat_all_gather(tensor):
 
 args = parse_args()
 setup_seed(args.seed)
-
+writer = SummaryWriter(log_dir='logs')
 epochs = args.epochs
 lr = args.lr
 batch_size = args.batch_size
@@ -141,6 +142,8 @@ def train_epoch(epoch):
         #     train_loss /= print_freq
         #     logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
         #     train_loss = 0
+    # Log the training loss
+    writer.add_scalar('Loss/Train', loss.item(), epoch * len(train_loader) + i)
     logger.info(f"Epoch [{epoch}/{epochs}] Batch [{i+1}/{stepsize}]\tLoss: {train_loss:.4f}")
     model.eval()
     ema.apply_shadow()
@@ -160,6 +163,8 @@ def eval_epoch(epoch):
         pred_correct += output.sum()
     acc = pred_correct / pred_all
     logger.info(f"Epoch [{epoch}/{epochs}] Validation Accuracy: {acc:.2f}%")
+    # Log the validation accuracy
+    writer.add_scalar('Accuracy/Val', acc, epoch)
 
 def main():
     logger.info("Start training...")
@@ -178,6 +183,7 @@ def main():
         'state_dict': model.state_dict(),
         'optimizer': opt.state_dict(),
     }, os.path.join(work_dir, 'model_final.pth'))
+    writer.close()
 
 if __name__ == '__main__':
     main()
