@@ -6,7 +6,7 @@ import math
 from transformers import BertModel, BertConfig
 import numpy as np
 
-num_class  = 6 # 250 
+num_class  = 23 # 250 
 num_landmark = 543
 max_length = 100
 embed_dim  = 480

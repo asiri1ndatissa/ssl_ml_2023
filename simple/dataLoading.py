@@ -2,6 +2,33 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+ALL  = np.arange(0,543).tolist()    #468
+
+def get_indexs(L):
+    return sorted([i + j * len(L) for i in range(len(L)) for j in range(len(L)) if i>j])
+
+DIST_INDEX = get_indexs(ALL)
+
+def pre_process(xyz):
+    all   = xyz[:, ALL]#20
+
+    xyz = torch.cat([ #(none, 106, 2)
+        all,
+    ],1)
+
+    rd = all[:,:,:2].reshape(-1,len(ALL),1,2)-all[:,:,:2].reshape(-1,1,len(ALL),2)
+    rd = torch.sqrt((rd**2).sum(-1))
+    rd = rd.reshape(-1,len(ALL)*len(ALL))[:,DIST_INDEX]
+
+    xyz = torch.cat([xyz.reshape(-1,(len(ALL))*2), 
+                         rd,
+                        ],1)
+    
+    # fill the nan value with 0
+    xyz[torch.isnan(xyz)] = 0
+
+    return xyz
+
 class D(Dataset):
 
     def __init__(self, path, num_classes, maxlen, training=False):
@@ -42,6 +69,7 @@ class D(Dataset):
 
 
         xyz = torch.from_numpy(xyz).float()
+        xyz = pre_process(xyz)[:self.maxlen]
         
         xyz[torch.isnan(xyz)] = 0
 

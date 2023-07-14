@@ -24,7 +24,7 @@ batch_size = 32
 shuffle = True
 num_workers = 2
 
-num_classes = 6
+num_classes = 23
 d_model = 1086
 num_heads = 6
 num_encoder_layers = 2
