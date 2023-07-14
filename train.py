@@ -76,16 +76,16 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 if args.debug:
-    train_dataset = D('./data/val.npy', training=True)
+    train_dataset = D('../drive/MyDrive/ssl_j14/val.npy', training=True)
 else:
-    train_dataset = D('./data/train_full.npy', training=True)
+    train_dataset = D('../drive/MyDrive/ssl_j14/train_full.npy', training=True)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=2, shuffle=True)
 
 if args.debug:
-    val_dataset = D('./data/val.npy')
+    val_dataset = D('../drive/MyDrive/ssl_j14/val.npy')
 else:
-    val_dataset = D('./data/val.npy')
+    val_dataset = D('../drive/MyDrive/ssl_j14/val.npy')
 val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=2)
 
 model = M(nlayers)

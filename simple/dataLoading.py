@@ -48,7 +48,7 @@ class D(Dataset):
         # padding the sqeuence to a pre-defined max length
         data_pad = torch.zeros((self.maxlen, xyz.shape[1]), dtype=torch.float32)
         tot = xyz.shape[0]
-
+        
         if tot <= self.maxlen:
             data_pad[:tot] = xyz
         else:

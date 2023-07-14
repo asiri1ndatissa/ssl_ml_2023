@@ -33,9 +33,9 @@ class FeatureGen(nn.Module):
     
 feature_converter = FeatureGen()
 
-ROWS_PER_FRAME = 533
+ROWS_PER_FRAME = 543
 def load_relevant_data_subset(csv_path):
-    data_columns = ['x', 'y']
+    data_columns = ['x', 'y', 'z']
     data = pd.read_csv(csv_path, usecols=data_columns)
     n_frames = int(len(data) / ROWS_PER_FRAME)
     data = data.values.reshape(n_frames, ROWS_PER_FRAME, len(data_columns))
