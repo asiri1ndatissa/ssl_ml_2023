@@ -20,7 +20,7 @@ from dataLoading import D
 from torch.utils.data import DataLoader
 
 
-batch_size = 32
+batch_size = 20
 shuffle = True
 num_workers = 2
 
@@ -37,8 +37,8 @@ work_dir = 'work_dirs/exp1'
 
 writer = SummaryWriter(log_dir='logs')
 
-train_dataset = D('/content/drive/MyDrive/asl_kp/train_full.npy',num_classes,100, training=True)
-val_dataset = D('/content/drive/MyDrive/asl_kp/val.npy',num_classes,100, training=True)
+train_dataset = D('/content/ssl_ml_2023/data/train_full.npy',num_classes,100, training=True)
+val_dataset = D('/content/ssl_ml_2023/data/val.npy',num_classes,100, training=True)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
@@ -57,11 +57,13 @@ def loss_function(outputs, targets):
 
 
 for epoch in range(num_epochs):
+    print('epoch',epoch)
     model.train()  # Set the model to training mode
 
     pred_all = 0.
     pred_correct = 0.
     for batch_idx, data in enumerate(train_loader):
+
         keypoints, labels = data[0], data[1]
 
         optimizer.zero_grad()  # Clear the gradients
