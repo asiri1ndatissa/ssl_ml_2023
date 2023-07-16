@@ -67,6 +67,7 @@ for epoch in range(num_epochs):
     total = 0.
     correct = 0.
     epoch_loss = 0
+    lRate = 0
     for batch_idx, data in enumerate(train_loader):
 
         keypoints, labels = data[0], data[1]
@@ -100,9 +101,11 @@ for epoch in range(num_epochs):
         # Log training progress, update metrics, etc.
     accu=100.*correct/total
     avg_loss = epoch_loss / len(train_loader)
-
+    for param_group in optimizer.param_groups:
+        lRate = param_group['lr']
+        print(f"Learning Rate: {param_group['lr']:.8f}")
     # Print accuracy
-    print(f"Epoch [{epoch+1}/{num_epochs}] Training Accuracy: {accuracy:.4f} loss: {avg_loss:.3f} TAccuracy: {accu:.3f}")
+    print(f"Epoch [{epoch+1}/{num_epochs}] Training Accuracy: {accuracy:.4f} loss: {avg_loss:.3f} TAccuracy: {accu:.3f} Learning Rate: {lRate:.8f}")
 
     # print accuracy of training
     # Evaluate the model on the validation set
