@@ -14,9 +14,9 @@ from torch.utils.data import Dataset, DataLoader
 import warnings
 warnings.filterwarnings(action='ignore')
 
-LANDMARK_FILES_DIR = "/content/drive/MyDrive/july8thData/keyPoints"
-TRAIN_FILE = "/content/drive/MyDrive/july8thData/train_file.csv"
-label_map = json.load(open("/content/drive/MyDrive/july8thData/sign_map.json", "r"))
+LANDMARK_FILES_DIR = "/content/drive/MyDrive/july15thData/keyPoints"
+TRAIN_FILE = "/content/drive/MyDrive/july15thData/train_file.csv"
+label_map = json.load(open("/content/ssl_ml_2023/tainFiles/sign_map.json", "r"))
 
 # create directory for datasets
 os.system('mkdir data')
