@@ -67,10 +67,9 @@ class D(Dataset):
         xyz = xyz - m #noramlisation to common maen
         xyz = xyz / np.nanstd(xyz_flat, 0).mean() 
 
-
         xyz = torch.from_numpy(xyz).float()
         # xyz = pre_process(xyz)[:self.maxlen]
-        xyz= xyz.reshape(-1,2)
+        xyz= xyz.reshape(xyz.shape[0],1086)
         xyz[torch.isnan(xyz)] = 0
 
         # padding the sqeuence to a pre-defined max length

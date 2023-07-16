@@ -60,8 +60,9 @@ for epoch in range(num_epochs):
     print('epoch',epoch)
     model.train()  # Set the model to training mode
 
-    pred_all = 0.
-    pred_correct = 0.
+    total = 0.
+    correct = 0.
+    epoch_loss = 0
     for batch_idx, data in enumerate(train_loader):
 
         keypoints, labels = data[0], data[1]
@@ -73,14 +74,14 @@ for epoch in range(num_epochs):
         labels_one_hot = F.one_hot(labels, num_classes).float()
         # Compute the loss
         loss = loss_function(outputs, labels_one_hot)
-        print('outputs',outputs, labels_one_hot)
+        epoch_loss += loss.item()
         # Backward pass
         loss.backward()
         optimizer.step()
         _, predicted = torch.max(outputs, 1)
         outputs = outputs.argmax(dim=-1)
-        pred_all += outputs.shape[0]
-        pred_correct += outputs.sum()
+        # pred_all += outputs.shape[0]
+        # pred_correct += outputs.sum()
         accuracy = (predicted == labels).sum().item() / labels.size(0)
         writer.add_scalar('Loss/Training', accuracy, epoch)
         torch.save({
@@ -88,16 +89,23 @@ for epoch in range(num_epochs):
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }, os.path.join(work_dir, 'model_last.pth'))
+        total += labels.size(0)
+        correct += predicted.eq(labels).sum().item()
 
         # Log training progress, update metrics, etc.
-    acc = pred_correct / pred_all
+    accu=100.*correct/total
+    avg_loss = epoch_loss / len(train_loader)
 
     # Print accuracy
-    print(f"Epoch [{epoch+1}/{num_epochs}] Training Accuracy: {accuracy:.4f} TAcc: {acc:.3f}")
+    print(f"Epoch [{epoch+1}/{num_epochs}] Training Accuracy: {accuracy:.4f} loss: {avg_loss:.3f} TAccuracy: {accu:.3f}")
 
     # print accuracy of training
     # Evaluate the model on the validation set
     model.eval()  # Set the model to evaluation mode
+
+    val_total = 0.
+    val_correct = 0.
+    val_epoch_loss = 0
     
     with torch.no_grad():
         for batch_idx, data in enumerate(val_loader):
@@ -111,10 +119,15 @@ for epoch in range(num_epochs):
             val_loss = loss_function(outputs, labels_one_hot)
             _, predicted = torch.max(outputs, 1)
             accuracy = (predicted == labels).sum().item() / labels.size(0)
+            val_epoch_loss += loss.item()
+            val_total += labels.size(0)
+            val_correct += predicted.eq(labels).sum().item()
+
+        val_accu=100.*val_correct/val_total
+        val_avg_loss = val_epoch_loss / len(train_loader)
+
             # Update validation metrics, e.g., accuracy
-        print('label predit',labels_one_hot)
-        print('label',data[1])
-        print(f"validation : {accuracy:.3f}")       
+        print(f"validation : {val_accu:.3f} loss : {loss:.3f}")       
     # Log the training and validation metrics, save checkpoints, etc.
 writer.close()
 # Training complete
