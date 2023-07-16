@@ -119,7 +119,7 @@ for epoch in range(num_epochs):
             val_loss = loss_function(outputs, labels_one_hot)
             _, predicted = torch.max(outputs, 1)
             accuracy = (predicted == labels).sum().item() / labels.size(0)
-            val_epoch_loss += loss.item()
+            val_epoch_loss += val_loss.item()
             val_total += labels.size(0)
             val_correct += predicted.eq(labels).sum().item()
 
@@ -127,7 +127,7 @@ for epoch in range(num_epochs):
         val_avg_loss = val_epoch_loss / len(train_loader)
 
             # Update validation metrics, e.g., accuracy
-        print(f"validation : {val_accu:.3f} loss : {loss:.3f}")       
+        print(f"validation : {val_accu:.3f} loss : {val_epoch_loss:.3f} avg_loss : {val_avg_loss:.3f}")       
     # Log the training and validation metrics, save checkpoints, etc.
 writer.close()
 # Training complete
