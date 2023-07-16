@@ -5,7 +5,7 @@ import sys
 import logging
 import math
 from torch.utils.tensorboard import SummaryWriter
-
+from transformers import get_linear_schedule_with_warmup
 
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -43,10 +43,14 @@ val_dataset = D('/content/ssl_ml_2023/data/val.npy',num_classes,100, training=Tr
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
+num_training_steps = len(train_loader) * num_epochs
+num_warmup_steps = int(0.1 * num_training_steps)  # You can adjust the warm-up proportion as needed
 
 # model = TransformerModel(num_classes, d_model, num_heads, num_encoder_layers, num_decoder_layers, dim_feedforward, dropout)
 model = M(3)
 optimizer = AdamW(model.parameters(), lr=lr)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps)
+
 if not os.path.exists(work_dir):
     os.makedirs(work_dir)
 
@@ -78,6 +82,7 @@ for epoch in range(num_epochs):
         # Backward pass
         loss.backward()
         optimizer.step()
+        scheduler.step()
         _, predicted = torch.max(outputs, 1)
         outputs = outputs.argmax(dim=-1)
         # pred_all += outputs.shape[0]
