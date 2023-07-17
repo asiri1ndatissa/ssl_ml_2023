@@ -30,14 +30,15 @@ newModel.load_state_dict(loaded_state_dict['state_dict'])
 
 newModel.eval()
 
-val_dataset = D('/content/ssl_ml_2023/data/val.npy',23, 100,training=True)
-val_loader = DataLoader(val_dataset, batch_size=20, num_workers=2)
+val_dataset = D('/content/ssl_ml_2023/data/test_full.npy',23, 100,training=True)
+val_loader = DataLoader(val_dataset, batch_size=1, num_workers=2)
 
 val_total = 0.
 val_correct = 0.
 val_epoch_loss = 0
 with torch.no_grad():
   for i, data in enumerate(val_loader):
+    print('data', data[0].shape)
     keypoints, labels = data[0], data[1]
     outputs = newModel(keypoints)
               
@@ -46,7 +47,9 @@ with torch.no_grad():
 
     val_loss = loss_function(outputs, labels_one_hot)
     _, predicted = torch.max(outputs, 1)
+    print('predicted',labels.item(), predicted, labels)
     accuracy = (predicted == labels).sum().item() / labels.size(0)
+    print('accuracy',accuracy, predicted.eq(labels).sum().item(), labels.size(0))
     val_epoch_loss += val_loss.item()
     val_total += labels.size(0)
     val_correct += predicted.eq(labels).sum().item()
