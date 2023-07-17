@@ -75,5 +75,13 @@ def convert_and_save_validate_data(val=False):
     else:
         np.save(f"./data/train_full.npy", np.array(data_list))
 
-print('test')
+def convert_and_save_test_data():
+    data_list = []
+    TEST_PATH = '/content/drive/MyDrive/Asiri/test/noName/test.csv'
+    data, label, signer_id = convert_row(TEST_PATH, '20', '3')
+    print(data.shape, label, data, signer_id)
+    data_list.append({'data': data, 'label': label, 'signer_id': signer_id})
+    np.save(f"./data/test_full.npy", np.array(data_list))
+
+
 convert_and_save_validate_data(True)
