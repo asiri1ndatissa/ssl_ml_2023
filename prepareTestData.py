@@ -45,7 +45,7 @@ def convert_row(path, label, signer_id):
 
 def convert_and_save_test_data():
     data_list = []
-    data, label, signer_id = convert_row(TEST_PATH, '20', '3')
+    data, label, signer_id = convert_row(TEST_PATH, 20, 3)
     print(data.shape, label, data, signer_id)
     data_list.append({'data': data, 'label': label, 'signer_id': signer_id})
     np.save(f"./data/test_full.npy", np.array(data_list))
