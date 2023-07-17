@@ -16,7 +16,7 @@ warnings.filterwarnings(action='ignore')
 
 # create directory for datasets
 os.system('mkdir data')
-TEST_PATH = '/content/drive/MyDrive/Asiri/test/noName/test.csv'
+TEST_PATH = '/content/drive/MyDrive/july15thData/keyPoints/කලු/Black7.csv'
 
 class FeatureGen(nn.Module):
     def __init__(self):
