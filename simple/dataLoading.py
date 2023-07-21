@@ -31,9 +31,10 @@ DIST_INDEX = get_indexs(ALL)
 
 class D(Dataset):
 
-    def __init__(self, path, num_classes=23, maxlen=100, training=False):
+    def __init__(self, array, num_classes=23, maxlen=100, training=False):
 
-        self.data = np.load(path, allow_pickle=True)
+        self.data = array
+        # print('data shape',self.data.shape)
         self.maxlen = maxlen # 537 actually
         self.training = training
         self.label_map = [[] for _ in range(num_classes)]
