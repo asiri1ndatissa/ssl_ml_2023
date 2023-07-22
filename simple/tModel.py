@@ -11,7 +11,7 @@ num_landmark = 543
 max_length = 100
 embed_dim  = 480
 num_head   = 8 # ranges from 4 to 16
-point_dim = 1086
+point_dim = 979 # of features
 
 def positional_encoding(length, embed_dim):
     dim = embed_dim//2

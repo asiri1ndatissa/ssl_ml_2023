@@ -4,30 +4,129 @@ from torch.utils.data import Dataset
 
 ALL  = np.arange(0,543).tolist()    #468
 
+LHAND = np.arange(468, 489).tolist() # 21
+RHAND = np.arange(522, 543).tolist() # 21
+POSE  = np.arange(489, 522).tolist() # 33
+FACE  = np.arange(0,468).tolist()    #468
+
+REYE = [
+    33, 7, 163, 144, 145, 153, 154, 155, 133,
+    246, 161, 160, 159, 158, 157, 173,
+][::2]
+LEYE = [
+    263, 249, 390, 373, 374, 380, 381, 382, 362,
+    466, 388, 387, 386, 385, 384, 398,
+][::2]
+NOSE=[
+    1,2,98,327
+]
+SLIP = [
+    78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308,
+    191, 80, 81, 82, 13, 312, 311, 310, 415,
+]
+SPOSE = (np.array([
+    11,13,15,12,14,16,23,24,
+])+489).tolist()
+
+BODY = REYE+LEYE+NOSE+SLIP+SPOSE
+
+# def get_indexs(L):
+#     return sorted([i + j * len(L) for i in range(len(L)) for j in range(len(L)) if i>j])
+
+# [1,2,3,4,5]
+#     2345
+#         [1,2,3,4,5]
+#             1
+#                 2+1*5,3+1*5,3+2*5
+
 def get_indexs(L):
-    return sorted([i + j * len(L) for i in range(len(L)) for j in range(len(L)) if i>j])
+    index_pairs = []
+    for i in range(len(L)):
+        for j in range(len(L)):
+            if i > j:
+                index_pairs.append(i + j * len(L))
+    return sorted(index_pairs)
 
-DIST_INDEX = get_indexs(ALL)
+DIST_INDEX = get_indexs(RHAND)
 
-# def pre_process(xyz):
-#     all   = xyz[:, ALL]#20
-#     print('all',all.shape)
-#     xyz = torch.cat([ #(none, 106, 2)
-#         all,
-#     ],1)
-#     print('xyz concat', xyz.shape)
-#     rd = all[:,:,:2].reshape(-1,len(ALL),1,2)-all[:,:,:2].reshape(-1,1,len(ALL),2)
-#     rd = torch.sqrt((rd**2).sum(-1))
-#     rd = rd.reshape(-1,len(ALL)*len(ALL))[:,DIST_INDEX]
 
-#     xyz = torch.cat([xyz.reshape(-1,(len(ALL))*2), 
-#                          rd,
-#                         ],1)
-    
-#     # fill the nan value with 0
-#     xyz[torch.isnan(xyz)] = 0
+LIP_DIST_INDEX = get_indexs(SLIP)
 
-#     return xyz
+POSE_DIST_INDEX = get_indexs(SPOSE)
+
+EYE_DIST_INDEX = get_indexs(REYE)
+
+NOSE_DIST_INDEX = get_indexs(NOSE)
+
+HAND_START = [0,1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,0,5,9,13,0]
+HAND_END = [1,2,3,4,6,7,8,10,11,12,14,15,16,18,19,20,5,9,13,17,17]
+
+
+point_dim = len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE)*2+len(LHAND+RHAND)*2+len(RHAND)+len(POSE_DIST_INDEX)+len(DIST_INDEX)*2 +len(EYE_DIST_INDEX)*2+len(LIP_DIST_INDEX)
+
+DIST_INDEX_ALL = get_indexs(ALL)
+
+def compute_pairwise_distance_between_keypoints(kpTensor, INDEXES, BODY_DIST_INDEX):
+    kp_xy = kpTensor[:, :, :2]
+    kp_xy_reshape = kp_xy.reshape(-1, len(INDEXES), 1, 2) - kp_xy.reshape(-1, 1, len(INDEXES), 2)
+    kp_xy_euclidean_distance = torch.sqrt((kp_xy_reshape ** 2).sum(-1))
+    kp_2D_square_matrix = kp_xy_euclidean_distance.reshape(-1, len(INDEXES) * len(INDEXES))
+    kp_extract_pairwise_distances = kp_2D_square_matrix[:, BODY_DIST_INDEX]
+    return kp_extract_pairwise_distances
+
+def compute_delta_consecutive_frames_xy_hands(kpTensor):
+    XPX = torch.cat([kpTensor[1:,:len(LHAND+RHAND),:]-kpTensor[:-1,:len(LHAND+RHAND),:],torch.zeros((1,len(LHAND+RHAND),2))],0)
+    xyz_lr = kpTensor[:, :len(LHAND+RHAND), :]
+    xyz_diff = xyz_lr[1:, :] - xyz_lr[:-1, :]
+    x_diff = torch.cat([xyz_diff, torch.zeros((1, len(LHAND+RHAND), 2))], 0)
+    return x_diff
+
+
+def pre_process(xyz):
+
+    lip   = xyz[:, SLIP]#20
+    lhand = xyz[:, LHAND]#21
+    rhand = xyz[:, RHAND]#21
+    pose = xyz[:, SPOSE]#8
+    reye = xyz[:, REYE]#16
+    leye = xyz[:, LEYE]#16
+    nose = xyz[:, NOSE]#4
+
+
+    xyz = torch.cat([ #(none, 106, 2)
+        lhand,
+        rhand,
+        lip,
+        pose,
+        reye,
+        leye,
+        nose,
+    ],1)
+
+    delta_consecutive_frames_xy_hands=compute_delta_consecutive_frames_xy_hands(xyz)
+
+    pose_distance = compute_pairwise_distance_between_keypoints(pose, SPOSE, POSE_DIST_INDEX)
+    left_hand_distance = compute_pairwise_distance_between_keypoints(lhand, LHAND, DIST_INDEX)
+    right_hand_distance = compute_pairwise_distance_between_keypoints(rhand, RHAND, DIST_INDEX)
+    lip_distance = compute_pairwise_distance_between_keypoints(lip, SLIP, LIP_DIST_INDEX)
+    right_eye_distance = compute_pairwise_distance_between_keypoints(reye, REYE, EYE_DIST_INDEX)
+    left_eye_distance = compute_pairwise_distance_between_keypoints(leye, LEYE, EYE_DIST_INDEX)
+    distance_between_hands = torch.sqrt(((lhand-rhand)**2).sum(-1))
+
+    xyz = torch.cat([xyz.reshape(-1,(len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE))*2), 
+                         delta_consecutive_frames_xy_hands.reshape(-1,(len(LHAND+RHAND))*2),
+                         left_hand_distance,
+                         right_hand_distance,
+                         lip_distance,
+                         pose_distance,
+                         right_eye_distance,
+                         left_eye_distance,
+                         distance_between_hands,
+                        ],1)
+
+    xyz[torch.isnan(xyz)] = 0
+
+    return xyz
 
 class D(Dataset):
 
@@ -69,9 +168,7 @@ class D(Dataset):
         xyz = xyz / np.nanstd(xyz_flat, 0).mean() 
 
         xyz = torch.from_numpy(xyz).float()
-        # xyz = pre_process(xyz)[:self.maxlen]
-        xyz= xyz.reshape(xyz.shape[0],1086)
-        xyz[torch.isnan(xyz)] = 0
+        xyz = pre_process(xyz)[:self.maxlen]
 
         # padding the sqeuence to a pre-defined max length
         data_pad = torch.zeros((self.maxlen, xyz.shape[1]), dtype=torch.float32)
