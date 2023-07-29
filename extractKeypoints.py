@@ -1,19 +1,22 @@
 import csv
 import os
 import mediapipe as mp
+import cv2
 
 def extract_keypoints(video_path,sign,signer_id):
     # Extract the filename and extension from the video path
     video_name = os.path.basename(video_path)
     video_name_without_extension = os.path.splitext(video_name)[0]
-    folder_path = f'{folder}/{sign}'
+    # folder_path = f'{folder}/{sign}'
 
-    if not os.path.exists(folder_path):
-      os.makedirs(folder_path)
-      print("Folder created successfully.")
+    # if not os.path.exists(folder_path):
+    #   os.makedirs(folder_path)
+    #   print("Folder created successfully.")
 
     # Create the output CSV file path
-    csv_file_path = f'{folder_path}/{video_name_without_extension}.csv'
+    # csv_file_path = f'{folder_path}/{video_name_without_extension}.csv'
+    csv_file_path = 'test.csv'
+
     print('csv_file_path',csv_file_path)
     # Load video
     cap = cv2.VideoCapture(video_path)
@@ -29,9 +32,9 @@ def extract_keypoints(video_path,sign,signer_id):
 
     # write train file
 
-    with open(TRAIN_FILE, 'a', newline='') as train_csv:
-        train_csv_writer = csv.writer(train_csv)
-        train_csv_writer.writerow([csv_file_path, signer_id, sign])
+    # with open(TRAIN_FILE, 'a', newline='') as train_csv:
+    #     train_csv_writer = csv.writer(train_csv)
+    #     train_csv_writer.writerow([csv_file_path, signer_id, sign])
 
     # Initialize CSV writer
     csv_file = open(csv_file_path, 'w', newline='')
@@ -52,7 +55,7 @@ def extract_keypoints(video_path,sign,signer_id):
 
             # Check if both left hand and right hand landmarks are found
             if results.left_hand_landmarks is not None or results.right_hand_landmarks is not None:
-
+              print('Found')
               # Extract face keypoints
               if results.face_landmarks is not None:
                   for idx, landmark in enumerate(results.face_landmarks.landmark):
@@ -117,3 +120,5 @@ def extract_keypoints(video_path,sign,signer_id):
     cap.release()
     csv_file.close()
     cv2.destroyAllWindows()
+
+extract_keypoints('සුභ උදෑසනක් 100.mp4',1,1)

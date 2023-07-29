@@ -42,8 +42,6 @@ def convert_and_save_test_data(npArray):
     data_list = []
     data, label, signer_id = convert_row(npArray, 20, 3)
     data_list.append({'data': data, 'label': label, 'signer_id': signer_id})
-    # np.save(f"temp_test_full.npy", np.array(data_list))
-    # return "temp_test_full.npy"
     return np.array(data_list)
 
 class KeypointsProcessor:
@@ -53,11 +51,10 @@ class KeypointsProcessor:
 
     def retriveFrameQue(self, frameQue):
         self.frameQue = frameQue
-
-        print('self.frameQue',self.frameQue.qsize())
         for frame in self.frameQue.queue:
             self.keyPointstoNP(frame)
-        print('self.xyz_array',self.xyz_array.shape)
+        return self.xyz_array.size
+        print('self.xyz_array',self.xyz_array.size)
 
 
     def keyPointstoNP(self, frame):

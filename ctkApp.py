@@ -40,7 +40,7 @@ class App:
         self.frame_queue = queue.Queue()
 
 
-        self.video_stream = cv2.VideoCapture(0)
+        self.video_stream = cv2.VideoCapture(1)
         self.is_webcam_on = False
         self.is_signing = False
         self.FRAME_COUNT = 0
@@ -84,8 +84,6 @@ class App:
         self.update()
 
         self.appearance_mode_optionemenu.set("Dark")
-        # self.textbox.insert("0.0", "CTkTextbox\n\n" + "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.\n\n" )
-
 
     def open_input_dialog_event(self):
         dialog = customtkinter.CTkInputDialog(text="Type in a number:", title="CTkInputDialog")
@@ -97,9 +95,6 @@ class App:
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
-
-    def sidebar_button_event(self):
-        print("sidebar_button click")
 
     def start_webcam(self):
         self.is_webcam_on = True
@@ -116,25 +111,28 @@ class App:
         self.main_button_1.configure(state='disabled')
 
     def start_signin(self):
+        self.main_button_1.configure(fg_color='green', text='Start Signing')
         self.kpProcesser = KeypointsProcessor()
         self.FRAME_COUNT = 0;
         self.is_signing = True
         self.window.after(5000, self.stop_sign_after_time)
-        self.frame_queue = queue.Queue()
+
 
 
     def stop_sign_after_time(self):
         if self.is_signing:
-            print('FRAME_Count', self.FRAME_COUNT)
-            # To get the length of the queue
-            queue_length = self.frame_queue.qsize()
-            print("Queue length:", queue_length)
-            self.kpProcesser.retriveFrameQue(self.frame_queue)
+            self.main_button_1.configure(fg_color='red', text='Loading')
+            print('FPS', self.video_stream.get(5))
+            self.kpSize = self.kpProcesser.retriveFrameQue(self.frame_queue)
+            self.frame_queue = queue.Queue()
+            if self.kpSize:
+                self.stop_recording()
+            elif self.kpSize == 0:
+                self.start_signin()
 
-            self.stop_recording()
     def stop_recording(self):
 
-        self.is_signing = False
+        # self.is_signing = False
 
         self.bar.start()
         def process_xyz_array_thread():
@@ -144,7 +142,9 @@ class App:
             self.predictions = xyz_processor.get_prediction()
             self.bar.stop()
             self.bar.set(1)
-            self.entry.insert(tk.END,self.predictions)
+            if self.kpSize:
+                self.entry.insert(tk.END,self.predictions)
+            self.start_signin()
 
         # Start the thread
         processing_thread = threading.Thread(target=process_xyz_array_thread)
@@ -154,11 +154,9 @@ class App:
         if self.is_webcam_on:
             ret, frame = self.video_stream.read()
             if self.is_signing:
-                # send the frame to the MainApp class
-                # self.video_writer.write(frame)
-                # self.kpProcesser.keyPointstoNP(frame)
                 self.frame_queue.put(frame)
                 self.FRAME_COUNT = self.FRAME_COUNT+1
+
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(frame)
@@ -172,7 +170,7 @@ class App:
                 self.canvas.create_image(0, 0, anchor=tkinter.NW, image=imgtk)
             
 
-        self.window.after(2, self.update)
+        self.window.after(1, self.update)
 
 
 if __name__ == "__main__":

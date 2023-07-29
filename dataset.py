@@ -91,6 +91,7 @@ def pre_process(xy,aug):
     reye = xy[:, REYE]#16
     leye = xy[:, LEYE]#16
     nose = xy[:, NOSE]#4
+    print('nose',nose)
     
     if aug and random.random()>0.7:
         lhand, rhand = do_hflip_hand(lhand, rhand)

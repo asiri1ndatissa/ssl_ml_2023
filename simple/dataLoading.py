@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+import random
+
+MAX_FRAMES = 0
 
 ALL  = np.arange(0,543).tolist()    #468
 
@@ -30,15 +33,6 @@ SPOSE = (np.array([
 
 BODY = REYE+LEYE+NOSE+SLIP+SPOSE
 
-# def get_indexs(L):
-#     return sorted([i + j * len(L) for i in range(len(L)) for j in range(len(L)) if i>j])
-
-# [1,2,3,4,5]
-#     2345
-#         [1,2,3,4,5]
-#             1
-#                 2+1*5,3+1*5,3+2*5
-
 def get_indexs(L):
     index_pairs = []
     for i in range(len(L)):
@@ -64,7 +58,33 @@ HAND_END = [1,2,3,4,6,7,8,10,11,12,14,15,16,18,19,20,5,9,13,17,17]
 
 point_dim = len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE)*2+len(LHAND+RHAND)*2+len(RHAND)+len(POSE_DIST_INDEX)+len(DIST_INDEX)*2 +len(EYE_DIST_INDEX)*2+len(LIP_DIST_INDEX)
 
-DIST_INDEX_ALL = get_indexs(ALL)
+def do_hflip_hand(lhand, rhand):
+    rhand[...,0] *= -1
+    lhand[...,0] *= -1
+    rhand, lhand = lhand,rhand
+    return lhand, rhand
+
+def do_hflip_spose(spose):
+    spose[...,0] *= -1
+    spose = spose[:,[3,4,5,0,1,2,7,6]]
+    return spose
+
+
+def do_hflip_eye(reye,leye):
+    reye[...,0] *= -1
+    leye[...,0] *= -1
+    reye, leye = leye,reye
+    return reye, leye
+
+def do_hflip_slip(slip):
+    slip[...,0] *= -1
+    slip = slip[:,[10,9,8,7,6,5,4,3,2,1,0]+[19,18,17,16,15,14,13,12,11]]
+    return slip
+
+def do_hflip_nose(nose):
+    nose[...,0] *= -1
+    nose = nose[:,[0,1,3,2]]
+    return nose
 
 def compute_pairwise_distance_between_keypoints(kpTensor, INDEXES, BODY_DIST_INDEX):
     kp_xy = kpTensor[:, :, :2]
@@ -75,14 +95,56 @@ def compute_pairwise_distance_between_keypoints(kpTensor, INDEXES, BODY_DIST_IND
     return kp_extract_pairwise_distances
 
 def compute_delta_consecutive_frames_xy_hands(kpTensor):
-    XPX = torch.cat([kpTensor[1:,:len(LHAND+RHAND),:]-kpTensor[:-1,:len(LHAND+RHAND),:],torch.zeros((1,len(LHAND+RHAND),2))],0)
     xyz_lr = kpTensor[:, :len(LHAND+RHAND), :]
     xyz_diff = xyz_lr[1:, :] - xyz_lr[:-1, :]
     x_diff = torch.cat([xyz_diff, torch.zeros((1, len(LHAND+RHAND), 2))], 0)
     return x_diff
 
+def spatial_random_affine(xy,
+    scale  = (0.8, 1.2),
+    shear  = (-0.15, 0.15),
+    shift  = (-0.1, 0.1),
+    degree = (-30, 30),
+):
+    device = xy.device
+    center = torch.tensor([0.5, 0.5]).to(device)
 
-def pre_process(xyz):
+    if scale is not None:
+        scale = torch.rand(1, device=device) * (scale[1] - scale[0]) + scale[0]
+        xy = scale * xy
+
+    if shear is not None:
+        shear_x = shear_y = torch.rand(1, device=device) * (shear[1] - shear[0]) + shear[0]
+        if torch.rand(1, device=device) < 0.5:
+            shear_x = 0.
+        else:
+            shear_y = 0.
+        shear_mat = torch.eye(2, device=device)
+        shear_mat[0, 1] = shear_x
+        shear_mat[1, 0] = shear_y
+        xy = xy @ shear_mat
+        center = center + torch.tensor([shear_y, shear_x]).to(device)
+
+    if degree is not None:
+        xy -= center
+        degree = torch.rand(1, device=device) * (degree[1] - degree[0]) + degree[0]
+        radian = degree / 180 * np.pi
+        c = torch.cos(radian)
+        s = torch.sin(radian)
+        rotate_mat = torch.eye(2, device=device)
+        rotate_mat[0, 1], rotate_mat[0, 0] = s, c
+        rotate_mat[1, 0], rotate_mat[1, 1] = -s, c
+        xy = xy @ rotate_mat
+        xy += center
+
+    if shift is not None:
+        shift = torch.rand(1, device=device) * (shift[1] - shift[0]) + shift[0]
+        xy = xy + shift
+
+    return xy
+
+
+def pre_process(xyz,aug):
 
     lip   = xyz[:, SLIP]#20
     lhand = xyz[:, LHAND]#21
@@ -92,6 +154,12 @@ def pre_process(xyz):
     leye = xyz[:, LEYE]#16
     nose = xyz[:, NOSE]#4
 
+    if aug and random.random()>0.6:
+        lhand, rhand = do_hflip_hand(lhand, rhand)
+        pose = do_hflip_spose(pose)
+        reye,leye = do_hflip_eye(reye,leye)
+        lip = do_hflip_slip(lip)
+        nose = do_hflip_nose(nose)
 
     xyz = torch.cat([ #(none, 106, 2)
         lhand,
@@ -128,14 +196,15 @@ def pre_process(xyz):
 
     return xyz
 
+
 class D(Dataset):
 
-    def __init__(self, array, num_classes=23, maxlen=100, training=False):
+    def __init__(self, array, num_classes=23, maxlen=80, training=False):
 
         self.data = array
-        # print('data shape',self.data.shape)
         self.maxlen = maxlen # 537 actually
         self.training = training
+        self.MAX_FRAMES = 0
         self.label_map = [[] for _ in range(num_classes)]
         for i, item in enumerate(self.data):
             label = item['label']
@@ -168,8 +237,10 @@ class D(Dataset):
         xyz = xyz / np.nanstd(xyz_flat, 0).mean() 
 
         xyz = torch.from_numpy(xyz).float()
-        xyz = pre_process(xyz)[:self.maxlen]
+        if self.training and random.random()>0.7:
+            xyz = spatial_random_affine(xyz)
 
+        xyz = pre_process(xyz,self.training)[:self.maxlen]
         # padding the sqeuence to a pre-defined max length
         data_pad = torch.zeros((self.maxlen, xyz.shape[1]), dtype=torch.float32)
         tot = xyz.shape[0]

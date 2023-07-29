@@ -6,10 +6,9 @@ import math
 from transformers import BertModel, BertConfig
 import numpy as np
 
-num_class  = 23 # 250 
-num_landmark = 543
-max_length = 100
-embed_dim  = 480
+num_class  = 23 # 23
+max_length = 80
+embed_dim  = 120
 num_head   = 8 # ranges from 4 to 16
 point_dim = 979 # of features
 
@@ -34,10 +33,10 @@ class XEmbed(nn.Module):
         self.v = nn.Sequential(
             nn.Linear(point_dim, embed_dim*2, bias=True),
             nn.LayerNorm(embed_dim*2),
-            nn.ReLU(inplace=True),
+            nn.RReLU(inplace=True),
             nn.Linear(embed_dim*2, embed_dim, bias=True),
             nn.LayerNorm(embed_dim),
-            nn.ReLU(inplace=True),
+            nn.RReLU(inplace=True),
     )
     def forward(self, x, x_mask):
         B,L,_ = x.shape
@@ -64,8 +63,8 @@ class TransformerBlock(nn.Module):
         self.norm2 = nn.LayerNorm(out_dim)
 
     def forward(self, x, x_mask=None):
-        x = x + F.dropout(self.attn((self.norm1(x)), x_mask), 0.1)
-        x = x + F.dropout(self.ffn((self.norm2(x))), 0.1)
+        x = x + F.dropout(self.attn((self.norm1(x)), x_mask), 0.2)
+        x = x + F.dropout(self.ffn((self.norm2(x))), 0.2)
         return x
 
 class MyMultiHeadAttention(nn.Module):
@@ -120,7 +119,7 @@ class FeedForward(nn.Module):
         super().__init__()
         self.mlp = nn.Sequential(
             nn.Linear(embed_dim, hidden_dim),
-            nn.ReLU(inplace=True),
+            nn.RReLU(inplace=True),
             nn.Linear(hidden_dim, embed_dim),
         )
     def forward(self, x):
@@ -171,8 +170,8 @@ class M(nn.Module):
         for block in self.encoder:
             x = block(x,x_mask)
 
-        if dropout:
-            x = F.dropout(x,p=dropout)
+        # if dropout:
+        #     x = F.dropout(x,p=dropout)
 
         x_mask = x_mask.unsqueeze(-1)
         x_mask = 1-x_mask.float()

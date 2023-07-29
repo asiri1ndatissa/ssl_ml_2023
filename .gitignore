@@ -17,6 +17,8 @@ venv/
 env/
 *.env/
 
+runs/
+
 # Dependency directories
 lib/
 lib64/
