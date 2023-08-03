@@ -1,9 +1,4 @@
-import argparse
 import os
-import random
-import sys
-import logging
-import math
 from sklearn.metrics import f1_score,precision_score, recall_score
 from torch.utils.tensorboard import SummaryWriter
 from transformers import get_linear_schedule_with_warmup
@@ -145,8 +140,6 @@ for epoch in range(num_epochs):
             
             # Compute the loss and metrics on the validation set
             labels_one_hot = F.one_hot(labels, num_classes).float()
-            # print('outputs',outputs.shape)
-            # val_loss = loss_function(outputs, labels_one_hot)
             val_loss = adaloss_criterion(outputs, labels)
 
             _, predicted = torch.max(outputs, 1)
@@ -179,14 +172,11 @@ for epoch in range(num_epochs):
         precision = precision_score(y_true, y_pred, average='micro')  # or 'macro' depending on your preference
         recall = recall_score(y_true, y_pred, average='micro')  # or 'macro' depending on your preference
 
-        # writer.add_figure("Confusion matrix", createConfusionMatrix(y_pred, y_true), epoch)
         writer.add_scalar('validation loss', val_avg_loss, epoch)
         writer.add_scalar('validation accuracy', val_accu, epoch)
         writer.add_scalar('precision',precision,epoch)
         writer.add_scalar('recall',recall,epoch)
         classificationReport(y_pred, y_true,epoch)
-        # writer.add_image('classification report' , classificationReport(y_pred, y_true),epoch)
-            # Update validation metrics, e.g., accuracy
         print(f"validation : {val_accu:.3f} loss : {val_epoch_loss:.3f} avg_loss : {val_avg_loss:.3f}")       
 
         classes = range(num_classes)
@@ -195,8 +185,6 @@ for epoch in range(num_epochs):
             preds_i = pred_pr[:, i]
             writer.add_pr_curve(str(i), labels_i,preds_i, global_step =0)
             writer.close()
-
-    # Log the training and validation metrics, save checkpoints, etc.
 
 # Training complete
 

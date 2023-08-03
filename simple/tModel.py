@@ -6,10 +6,10 @@ import math
 from transformers import BertModel, BertConfig
 import numpy as np
 
-num_class  = 23 # 23
+num_class  = 23 # 23 for now
 max_length = 80
 embed_dim  = 120
-num_head   = 8 # ranges from 4 to 16
+num_head   = 8 
 point_dim = 979 # of features
 
 def positional_encoding(length, embed_dim):
@@ -169,9 +169,6 @@ class M(nn.Module):
  
         for block in self.encoder:
             x = block(x,x_mask)
-
-        # if dropout:
-        #     x = F.dropout(x,p=dropout)
 
         x_mask = x_mask.unsqueeze(-1)
         x_mask = 1-x_mask.float()

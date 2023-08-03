@@ -16,22 +16,11 @@ import json
 # Load the sign_map.json file
 with open('tainFiles/sign_map.json', 'r') as f:
     sign_map = json.load(f)
-
-def process_xyz_array(file_path):
-    # Read the array from the file
-    xyz_array = np.load(file_path)
-    # Process the array as needed
-    print("Received XYZ array:", xyz_array.shape)
-
-
 class XYZProcessor:
     def __init__(self, npArray):
-        # self.file_path = 'test_full.npy'
-        # self.file_path = file_path
-        # self.xyz_array = np.load(self.file_path, allow_pickle=True)
         self.xyz_array = npArray
         self.newModel = M(3)
-        loaded_state_dict = torch.load('/Users/asiriindatissa/src/msc/ssl_ml_2023/work_dirs/exp1/model_last.pth')
+        loaded_state_dict = torch.load('/Users/asiriindatissa/src/msc/ssl_ml_2023/work_dirs/exp1/model_lastJuly25th.pth')
         self.newModel.load_state_dict(loaded_state_dict['state_dict'])
 
     def process_xyz_array(self):

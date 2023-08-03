@@ -5,8 +5,6 @@ import random
 
 MAX_FRAMES = 0
 
-ALL  = np.arange(0,543).tolist()    #468
-
 LHAND = np.arange(468, 489).tolist() # 21
 RHAND = np.arange(522, 543).tolist() # 21
 POSE  = np.arange(489, 522).tolist() # 33
@@ -58,30 +56,30 @@ HAND_END = [1,2,3,4,6,7,8,10,11,12,14,15,16,18,19,20,5,9,13,17,17]
 
 point_dim = len(LHAND+RHAND+REYE+LEYE+NOSE+SLIP+SPOSE)*2+len(LHAND+RHAND)*2+len(RHAND)+len(POSE_DIST_INDEX)+len(DIST_INDEX)*2 +len(EYE_DIST_INDEX)*2+len(LIP_DIST_INDEX)
 
-def do_hflip_hand(lhand, rhand):
+def hflip_hand(lhand, rhand):
     rhand[...,0] *= -1
     lhand[...,0] *= -1
     rhand, lhand = lhand,rhand
     return lhand, rhand
 
-def do_hflip_spose(spose):
+def hflip_spose(spose):
     spose[...,0] *= -1
     spose = spose[:,[3,4,5,0,1,2,7,6]]
     return spose
 
 
-def do_hflip_eye(reye,leye):
+def hflip_eye(reye,leye):
     reye[...,0] *= -1
     leye[...,0] *= -1
     reye, leye = leye,reye
     return reye, leye
 
-def do_hflip_slip(slip):
+def hflip_slip(slip):
     slip[...,0] *= -1
     slip = slip[:,[10,9,8,7,6,5,4,3,2,1,0]+[19,18,17,16,15,14,13,12,11]]
     return slip
 
-def do_hflip_nose(nose):
+def hflip_nose(nose):
     nose[...,0] *= -1
     nose = nose[:,[0,1,3,2]]
     return nose
@@ -155,11 +153,11 @@ def pre_process(xyz,aug):
     nose = xyz[:, NOSE]#4
 
     if aug and random.random()>0.6:
-        lhand, rhand = do_hflip_hand(lhand, rhand)
-        pose = do_hflip_spose(pose)
-        reye,leye = do_hflip_eye(reye,leye)
-        lip = do_hflip_slip(lip)
-        nose = do_hflip_nose(nose)
+        lhand, rhand = hflip_hand(lhand, rhand)
+        pose = hflip_spose(pose)
+        reye,leye = hflip_eye(reye,leye)
+        lip = hflip_slip(lip)
+        nose = hflip_nose(nose)
 
     xyz = torch.cat([ #(none, 106, 2)
         lhand,
@@ -209,10 +207,6 @@ class D(Dataset):
         for i, item in enumerate(self.data):
             label = item['label']
             self.label_map[label].append(i)
-        # if training:
-        #     self.augment = train_augment
-        # else:
-        #     self.augment = None
 
 
     def __len__(self):

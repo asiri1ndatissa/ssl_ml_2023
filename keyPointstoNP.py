@@ -1,5 +1,3 @@
-import csv
-import os
 import mediapipe as mp
 import cv2
 import numpy as np
@@ -54,8 +52,6 @@ class KeypointsProcessor:
         for frame in self.frameQue.queue:
             self.keyPointstoNP(frame)
         return self.xyz_array.size
-        print('self.xyz_array',self.xyz_array.size)
-
 
     def keyPointstoNP(self, frame):
         frame_count = 0

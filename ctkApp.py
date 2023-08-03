@@ -2,7 +2,6 @@ import sys
 import os
 import threading
 
-
 # Add the directory containing "simple" to Python path
 simple_folder = os.path.join(os.path.dirname(__file__), "simple")
 sys.path.append(simple_folder)
@@ -12,11 +11,9 @@ import tkinter.messagebox
 import customtkinter
 import cv2
 from PIL import Image, ImageTk
-import torch.nn as nn
 from keyPointstoNP import KeypointsProcessor
 from simple.test import XYZProcessor
 import queue
-
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -28,8 +25,8 @@ class App:
         # # configure window
         self.window = window
         self.window.title(window_title)
-        self.window.geometry(f"{1100}x{1000}")
-         # configure grid layout (4x4)
+        self.window.geometry(f"{1200}x{700}")
+
         self.window.grid_columnconfigure(1, weight=1)
         self.window.grid_columnconfigure((2, 3), weight=0)
         self.window.grid_rowconfigure((0, 1, 2), weight=1)
@@ -40,7 +37,7 @@ class App:
         self.frame_queue = queue.Queue()
 
 
-        self.video_stream = cv2.VideoCapture(1)
+        self.video_stream = cv2.VideoCapture(0)
         self.is_webcam_on = False
         self.is_signing = False
         self.FRAME_COUNT = 0
@@ -109,19 +106,22 @@ class App:
         self.sidebar_button_1.configure(state='normal')
         self.sidebar_button_2.configure(fg_color="#3669A0")
         self.main_button_1.configure(state='disabled')
+    
+    def stop_siging(self):
+        self.main_button_1.configure(fg_color="transparent", text='Start Sign', command=self.start_signin)
+        self.is_signing = False
 
     def start_signin(self):
-        self.main_button_1.configure(fg_color='green', text='Start Signing')
+        self.main_button_1.configure(fg_color='green', text='Stop Signing', command=self.stop_siging)
         self.kpProcesser = KeypointsProcessor()
         self.FRAME_COUNT = 0;
         self.is_signing = True
         self.window.after(5000, self.stop_sign_after_time)
 
-
-
     def stop_sign_after_time(self):
         if self.is_signing:
             self.main_button_1.configure(fg_color='red', text='Loading')
+            self.bar.start()
             print('FPS', self.video_stream.get(5))
             self.kpSize = self.kpProcesser.retriveFrameQue(self.frame_queue)
             self.frame_queue = queue.Queue()
@@ -132,9 +132,6 @@ class App:
 
     def stop_recording(self):
 
-        # self.is_signing = False
-
-        self.bar.start()
         def process_xyz_array_thread():
             npXYZArray = self.kpProcesser.get_xyz_array()
             xyz_processor = XYZProcessor(npXYZArray)
@@ -175,5 +172,5 @@ class App:
 
 if __name__ == "__main__":
     root = customtkinter.CTk()
-    app = App(root, "Webcam App")
+    app = App(root, "Sinhala Sign Recognition App")
     root.mainloop()
