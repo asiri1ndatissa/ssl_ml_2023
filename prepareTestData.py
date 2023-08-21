@@ -5,6 +5,7 @@ import json
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -16,7 +17,7 @@ warnings.filterwarnings(action='ignore')
 
 # create directory for datasets
 os.system('mkdir data')
-TEST_PATH = '/content/drive/MyDrive/july15thData/keyPoints/කලු/Black7.csv'
+TEST_PATH = 'test.csv'
 
 class FeatureGen(nn.Module):
     def __init__(self):
@@ -48,7 +49,7 @@ def convert_and_save_test_data():
     data, label, signer_id = convert_row(TEST_PATH, 20, 3)
     print(data.shape, label, data, signer_id)
     data_list.append({'data': data, 'label': label, 'signer_id': signer_id})
-    np.save(f"./data/test_full.npy", np.array(data_list))
+    np.save(f"test_full.npy", np.array(data_list))
 
 
 convert_and_save_test_data()

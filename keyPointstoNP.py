@@ -4,12 +4,6 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-import subprocess
-import os
-import sys
-from queue import Queue
-
-
 
 ROWS_PER_FRAME = 543
 
